@@ -47,7 +47,7 @@ dl-image-captioning-at3/
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/<org>/dl-image-captioning-at3.git
+git clone https://github.com/Nelkit/dl-image-captioning-at3.git
 ```
 
 ### 2. Data Setup — Google Drive (Colab workflow)
@@ -69,11 +69,21 @@ AT3-DL-ImageCaptioning/          ← shared Drive folder (all team members have 
 1. Share the `AT3-DL-ImageCaptioning` Drive folder with all team members
 2. Open `notebooks/shared/data_preparation.ipynb` in Google Colab
 3. Run all cells — the notebook downloads VizWiz, processes data, and uploads to Drive
-4. This takes ~15–30 min due to image upload. Done once for the whole group.
+4. This takes ~5-10 min due to image upload. Done once for the whole group.
 
 #### Every student — run your individual notebook
 
-1. Open `notebooks/students/TEMPLATE_student_notebook.ipynb` in Google Colab
+1. Copy `notebooks/students/TEMPLATE_student_notebook.ipynb` and rename it following the convention:
+
+   ```text
+   [firstname]-[student_id]-notebook.ipynb
+   ```
+
+   Examples: `nelkit-12345678-notebook.ipynb`, `john-87654321-notebook.ipynb`
+
+   Rules: lowercase only, no spaces, no accents, hyphen as separator.
+   For compound first names use a hyphen: `maria-jose-12345678-notebook.ipynb`
+
 2. Set `STUDENT_NAME` in cell 0 to your name
 3. Mount Drive (cell 0) — data is immediately available, no download needed
 4. Implement and train your models
