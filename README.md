@@ -30,16 +30,47 @@ dl-image-captioning-at3/
 
 ## Branch Strategy
 
-| Branch | Purpose |
-|---|---|
-| `main` | Stable, reviewed code only. No direct pushes. |
-| `shared/data-prep` | Phase 1 – collaborative data preparation notebook |
-| `student/<name>-model` | Phase 2 & 3 – each student's individual architectures |
+Each student works on their own branch from **Phase 1 onward**. There is no shared branch for individual work — everyone branches off `main` independently.
+
+| Branch             | Purpose                                                   |
+|--------------------|-----------------------------------------------------------|
+| `main`             | Stable, reviewed code only. No direct pushes.             |
+| `student/<name>`   | One branch per student — covers all phases (1, 2, 3)      |
+
+### Examples
+
+```text
+student/nelkit        ← Nelkit's branch (Phase 1 → 2 → 3)
+student/john          ← John's branch
+student/maria-jose    ← Compound names: use a hyphen
+```
 
 ### Workflow
-1. Branch off from `main` for your work
-2. Open a Pull Request when ready for review
-3. At least one teammate reviews before merging to `main`
+
+```bash
+# 1. Create your branch from main (once, at the start)
+git checkout main
+git pull origin main
+git checkout -b student/<your-name>
+
+# 2. Push it to the remote
+git push -u origin student/<your-name>
+
+# 3. Work on your notebook, commit regularly
+git add notebooks/students/<your-name>-<student_id>-notebook.ipynb
+git commit -m "feat: implement EDA cell"
+git push
+
+# 4. Open a Pull Request when a phase is complete
+# At least one teammate reviews before merging to main
+```
+
+> Tip: keep your branch up to date with `main` as teammates merge in.
+
+```bash
+git fetch origin
+git rebase origin/main
+```
 
 ---
 
