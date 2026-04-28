@@ -28,6 +28,33 @@ dl-image-captioning-at3/
 
 ---
 
+## Running Notebooks — Google Colab + VS Code
+
+You can open and run the notebooks directly from VS Code using the **Google Colab** extension — no browser tab switching needed.
+
+### Install the extension
+
+1. Open VS Code → Extensions (`Cmd+Shift+X`)
+2. Search for **Google Colab** (publisher: Google)
+3. Click **Install**
+
+### Open a notebook in Colab from VS Code
+
+1. Open any `.ipynb` file in VS Code (e.g. `notebooks/shared/data_preparation.ipynb`)
+2. Click the **kernel picker** in the top-right corner of the notebook editor
+3. Select **Connect to Google Colab**
+4. Sign in with your Google account when prompted
+5. The notebook now runs on Colab's GPU — all cells execute remotely
+
+### Tips
+
+- **Drive is not auto-mounted** — the first cell of every notebook mounts it (`drive.mount('/content/drive')`). Run it each session.
+- **Runtime resets between sessions** — variables and installed packages are lost when the runtime disconnects. Re-run from the top.
+- **GPU quota** — if you hit the free-tier limit, switch runtime type: `Runtime → Change runtime type → T4 GPU`.
+- **Saving** — the notebook file is saved to the repo (your local copy). Outputs are stored in Colab but not committed to git (`.ipynb_checkpoints/` is gitignored).
+
+---
+
 ## Branch Strategy
 
 Each student works on their own branch from **Phase 1 onward**. There is no shared branch for individual work — everyone branches off `main` independently.
@@ -127,16 +154,6 @@ All student models are evaluated at minimum with:
 - **BLEU-1, BLEU-2, BLEU-3, BLEU-4**
 
 Additional metrics may include METEOR, CIDEr, or qualitative visual inspection.
-
----
-
-## Team
-
-| Student | Branch |
-|---|---|
-| TBD | `student/<name>-model` |
-| TBD | `student/<name>-model` |
-| TBD | `student/<name>-model` |
 
 ---
 
