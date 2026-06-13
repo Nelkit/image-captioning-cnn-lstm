@@ -1,162 +1,129 @@
-# dl-image-captioning-at3
+# 🖼️ Image Captioning with CNN + LSTM — VizWiz Dataset
 
-Deep Learning Assignment 3 — Image Captioning with PyTorch  
-Dataset: [VizWiz-Captions](https://vizwiz.org/tasks-and-datasets/image-captioning/) validation set (7,750 images)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?style=flat&logo=pytorch&logoColor=white)
+![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?style=flat&logo=jupyter&logoColor=white)
+
+**UTS Deep Learning · Assignment 3 · MSc Data Science & Innovation**
+
+Two PyTorch image captioning architectures trained and evaluated on the [VizWiz-Captions](https://vizwiz.org/tasks-and-datasets/image-captioning/) validation set (7,750 images taken by people who are blind). Compares a lightweight MobileNetV3 + LSTM baseline against a GoogLeNet + LSTM with Luong spatial attention.
 
 ---
 
-## Project Structure
+## 📁 Repository Structure
 
 ```
 dl-image-captioning-at3/
-│
 ├── notebooks/
-│   ├── shared/           # Phase 1 – shared data preparation notebook (run once)
-│   └── students/         # Phase 2 & 3 – one notebook per student
-│
-├── checkpoints/          # Saved model weights (NOT tracked by git)
-├── reports/              # Final group report (Word / PDF)
-├── docs/                 # Any supplementary documentation
-│
+│   ├── shared/           # Phase 1 — shared data preparation (run once per group)
+│   └── students/         # Phase 2 & 3 — individual notebooks per student
+├── checkpoints/          # Saved model weights (not tracked by git)
+├── reports/              # Final group report
+├── docs/                 # Supplementary documentation
 └── README.md
 ```
 
-> All notebooks are self-contained and run on **Google Colab**. Dependencies are  
-> installed inside each notebook with `!pip install`. There is no `src/` module,  
-> no `requirements.txt`, and no `data/` folder in this repo — dataset files live  
-> in the shared Google Drive folder (see Data Setup below).
+> All notebooks are self-contained and run on Google Colab. Dependencies are installed inside each notebook. Dataset files live in the shared Google Drive folder.
 
 ---
 
-## Running Notebooks — Google Colab + VS Code
+## 🧪 My Models — Nelkit Chavez
 
-You can open and run the notebooks directly from VS Code using the **Google Colab** extension — no browser tab switching needed.
+### Model 1 — MobileNetV3-Small + LSTM (Phase 2)
 
-### Install the extension
+A lightweight, controlled baseline following the Show and Tell architecture (Vinyals et al., 2015).
 
-1. Open VS Code → Extensions (`Cmd+Shift+X`)
-2. Search for **Google Colab** (publisher: Google)
-3. Click **Install**
+**Encoder:** MobileNetV3-Small pretrained on ImageNet. Features extracted via global average pooling (576-d), projected to 256-d via Linear → BatchNorm → ReLU. Partial unfreezing: `features[0:9]` frozen, `features[9:12]` trainable to allow domain adaptation to VizWiz's challenging images (blurry, poorly framed, low-lit) without catastrophic forgetting.
 
-### Open a notebook in Colab from VS Code
+**Decoder:** Single-layer LSTM, no attention. Embedding dim: 256, hidden size: 512, vocabulary: 3,965 tokens.
 
-1. Open any `.ipynb` file in VS Code (e.g. `notebooks/shared/data_preparation.ipynb`)
-2. Click the **kernel picker** in the top-right corner of the notebook editor
-3. Select **Connect to Google Colab**
-4. Sign in with your Google account when prompted
-5. The notebook now runs on Colab's GPU — all cells execute remotely
-
-### Tips
-
-- **Drive is not auto-mounted** — the first cell of every notebook mounts it (`drive.mount('/content/drive')`). Run it each session.
-- **Runtime resets between sessions** — variables and installed packages are lost when the runtime disconnects. Re-run from the top.
-- **GPU quota** — if you hit the free-tier limit, switch runtime type: `Runtime → Change runtime type → T4 GPU`.
-- **Saving** — the notebook file is saved to the repo (your local copy). Outputs are stored in Colab but not committed to git (`.ipynb_checkpoints/` is gitignored).
+**Training:** Adam optimizer, encoder lr=3e-5 / decoder lr=3e-4, batch size 32, 10 epochs, ReduceLROnPlateau scheduler, dropout 0.5, gradient clipping at norm 5.0. Beam search k=3 at inference.
 
 ---
 
-## Branch Strategy
+### Model 2 — GoogLeNet + LSTM + Luong Attention (Phase 3)
 
-Each student works on their own branch from **Phase 1 onward**. There is no shared branch for individual work — everyone branches off `main` independently.
+Designed to address the representational ceiling identified in Phase 2 group discussion: all baseline models hit a BLEU-4 ceiling below 0.24 with low type-token ratios pointing to repetitive captions.
 
-| Branch             | Purpose                                                   |
-|--------------------|-----------------------------------------------------------|
-| `main`             | Stable, reviewed code only. No direct pushes.             |
-| `student/<name>`   | One branch per student — covers all phases (1, 2, 3)      |
+**Encoder:** GoogLeNet (Inception v1) pretrained on ImageNet. Instead of a single global vector, the encoder exposes the full 7x7 spatial grid from the last inception block (49 patches, 1,024 channels each), projected to 512-d. This gives the decoder a sequence of region descriptors rather than a single summarised representation. Freeze ratio: blocks 0-12 frozen, blocks 13-15 trainable (~70/30).
 
-### Examples
+**Decoder:** Single-layer LSTM with Luong General attention (input-feeding variant, Luong et al., 2015). At each decoding step, the hidden state scores all 49 spatial patches via a learned weight matrix, and the weighted sum becomes the context vector. LSTM input: 256 (embedding) + 512 (context) = 768-d, hidden size: 512.
 
-```text
-student/nelkit        ← Nelkit's branch (Phase 1 → 2 → 3)
-student/john          ← John's branch
-student/maria-jose    ← Compound names: use a hyphen
+**Training:** Same setup as Model 1. Best checkpoint saved at epoch 6 (earliest best validation loss).
+
+---
+
+## 📊 Results
+
+| Model | BLEU-1 | BLEU-2 | BLEU-3 | BLEU-4 | ROUGE-L |
+|---|---|---|---|---|---|
+| Model 1 — MobileNetV3 + LSTM | **0.614** | **0.427** | **0.296** | **0.208** | **0.542** |
+| Model 2 — GoogLeNet + LSTM + Attention | 0.568 | 0.401 | 0.282 | 0.202 | 0.511 |
+
+Both models exceed the expected VizWiz baseline ranges (BLEU-1: 0.45-0.60, ROUGE-L: 0.30-0.50).
+
+**Why Model 1 outperformed Model 2:** Model 2 had 3.2x more trainable encoder parameters (2,851,808 vs 884,712). With a fixed 10-epoch budget and 6,181 training images, the larger parameter space did not receive enough gradient updates to converge before overfitting (best checkpoint at epoch 6 vs epoch 10 for Model 1). The performance gap narrows consistently at higher n-gram orders (BLEU-4 gap: 0.006), suggesting the attention mechanism was functioning correctly but needed more training time to realise its benefit.
+
+---
+
+## 📦 Dataset Setup
+
+All data lives in a shared Google Drive folder named `AT3-DL-ImageCaptioning`.
+
+```
+AT3-DL-ImageCaptioning/
+├── raw/                      # Original VizWiz files
+└── processed/
+    ├── images_224/           # 7,750 images resized to 224x224
+    ├── captions_clean.json   # Tokenised captions keyed by image_id
+    ├── vocab.pkl             # Vocabulary (word2idx, idx2word, special tokens)
+    └── splits.json           # Train/val/test splits (80/10/10)
 ```
 
-### Workflow
+**First time only:** run `notebooks/shared/data_preparation.ipynb` on Colab (~5-10 min). This downloads VizWiz, processes the data, and uploads to Drive. Done once per group.
+
+---
+
+## 🚀 Running on Google Colab
+
+1. Clone the repo and open your student notebook in VS Code
+2. Install the Google Colab extension (publisher: Google)
+3. Click the kernel picker and select **Connect to Google Colab**
+4. Mount Drive in the first cell: `drive.mount('/content/drive')`
+5. Run all cells — GPU runs remotely on Colab
+
+**Tips:**
+- Runtime resets between sessions — re-run from the top each time
+- If you hit the free GPU quota: `Runtime → Change runtime type → T4 GPU`
+- Checkpoints are saved to Drive, not committed to git
+
+---
+
+## 🌿 Branch Strategy
+
+Each student works on their own branch from Phase 1 onward.
 
 ```bash
-# 1. Create your branch from main (once, at the start)
-git checkout main
-git pull origin main
+# Create your branch from main
+git checkout main && git pull origin main
 git checkout -b student/<your-name>
-
-# 2. Push it to the remote
 git push -u origin student/<your-name>
 
-# 3. Work on your notebook, commit regularly
-git add notebooks/students/<your-name>-<student_id>-notebook.ipynb
-git commit -m "feat: implement EDA cell"
-git push
-
-# 4. Open a Pull Request when a phase is complete
-# At least one teammate reviews before merging to main
+# Keep your branch up to date
+git fetch origin && git rebase origin/main
 ```
 
-> Tip: keep your branch up to date with `main` as teammates merge in.
-
-```bash
-git fetch origin
-git rebase origin/main
-```
+Open a Pull Request when a phase is complete. At least one teammate reviews before merging to main.
 
 ---
 
-## Setup
+## 🛠️ Stack
 
-### 1. Clone the repo
-```bash
-git clone https://github.com/Nelkit/dl-image-captioning-at3.git
-```
-
-### 2. Data Setup — Google Drive (Colab workflow)
-
-All data lives in a **shared Google Drive folder** named `AT3-DL-ImageCaptioning`.
-
-```text
-AT3-DL-ImageCaptioning/          ← shared Drive folder (all team members have access)
-├── raw/                          ← original VizWiz files (kept as backup)
-└── processed/
-    ├── images_224/               ← all 7,750 images resized to 224×224
-    ├── captions_clean.json       ← tokenised captions keyed by image_id
-    ├── vocab.pkl                 ← vocabulary (word2idx, idx2word, special tokens)
-    └── splits.json               ← train/val/test image ID lists (80/10/10)
-```
-
-#### First time only — run the shared notebook (one person per group)
-
-1. Share the `AT3-DL-ImageCaptioning` Drive folder with all team members
-2. Open `notebooks/shared/data_preparation.ipynb` in Google Colab
-3. Run all cells — the notebook downloads VizWiz, processes data, and uploads to Drive
-4. This takes ~5-10 min due to image upload. Done once for the whole group.
-
-#### Every student — run your individual notebook
-
-1. Copy `notebooks/students/TEMPLATE_student_notebook.ipynb` and rename it following the convention:
-
-   ```text
-   [firstname]-[student_id]-notebook.ipynb
-   ```
-
-   Examples: `nelkit-12345678-notebook.ipynb`, `john-87654321-notebook.ipynb`
-
-   Rules: lowercase only, no spaces, no accents, hyphen as separator.
-   For compound first names use a hyphen: `maria-jose-12345678-notebook.ipynb`
-
-2. Set `STUDENT_NAME` in cell 0 to your name
-3. Mount Drive (cell 0) — data is immediately available, no download needed
-4. Implement and train your models
+`Python` · `PyTorch` · `torchvision` · `NumPy` · `NLTK` · `matplotlib` · `Google Colab`
 
 ---
 
-## Evaluation Metrics
+## 👤 Author
 
-All student models are evaluated at minimum with:
-- **BLEU-1, BLEU-2, BLEU-3, BLEU-4**
-
-Additional metrics may include METEOR, CIDEr, or qualitative visual inspection.
-
----
-
-## Deadline
-
-**20 May 2026, 23:59** — late penalty: 10 pts per day.
+**Nelkit Isael Chavez Calona** | Student ID: 25609227
+University of Technology Sydney — MSc Data Science & Innovation
